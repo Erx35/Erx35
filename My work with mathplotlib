@@ -1,0 +1,157 @@
+"""
+Importing assignment:
+Main:
+Pick any library that come with Python
+(https://docs.python.org/3/library/) that we haven't covered in the course already.
+
+Learn how to use the library extensively, then prepare a code sample that showcases what you've learned.
+This can take any form you wish. You could create an application with the library, or just show examples
+of how to use its methods.
+
+Extra credit:
+Share your knowledge with the community by writing a blog post instead of just uploading a code sample!
+You don't need to mention this class at all, just share what you've learned about that library. If you've been
+meaning to start a coding blog, now you have a reason to do it! If you take this route, just send us the link to
+the post instead of to your Github code,
+
+Program to visualise Trolley Watch data
+Example of: matplotlib
+
+"""
+import datetime
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+
+
+def get_data(filename):
+    """
+    Function to retrieve trolleywatch data from the file
+    The data is cleaned up and formatted to be represented on the charts
+
+    Parameters
+    ----------
+    filename : string
+        The path name of the file containing the data.
+
+    Returns
+    -------
+    dates_data : dict
+        A dictionary containing as key-value pairs the dates and the number of patients on that date
+    hospitals_data : dict
+        A dictionary containing as key-value pairs the hospital and the number of patients in that hospital.
+    regions_data : dict
+        A dictionary containing as key-value pairs the region and the number of patients in that region.
+    trolley_vs_ward_numbers: list
+        A list of tuples containing the trolley numbers and ward numbers.
+    """
+    # create empty dictionaries for the data
+    dates_data = {}
+    hospitals_data = {}
+    regions_data = {}
+
+    # create an empty list for the trolley and ward numbers
+    trolley_vs_ward_numbers = []
+
+    # date format string
+    format_str = "%d/%m/%Y"
+
+    # read the data from the file
+    with open(filename) as datafile:
+        # read the first line containing the headings and discard it
+        datafile.readline()
+
+        # for each other line in the file
+        for line in datafile:
+            # split the line into the components
+            date_string, hospital, region, trolley, ward, patients = line.strip().split(",")
+
+            # convert the date string to a datetime object
+            date = datetime.datetime.strptime(date_string, format_str)
+
+            # convert the patient value to an int, save having to code this repeatedly
+            patients = int(patients)
+
+            # if this is the first occurrence of this date
+            if date not in dates_data:
+                # insert into dictionary
+                dates_data[date] = patients
+            else:
+                dates_data[date] += patients
+
+            # if this is the first occurrence of this hospital
+            if hospital not in hospitals_data:
+                # insert into dictionary
+                hospitals_data[hospital] = patients
+            else:
+                hospitals_data[hospital] += patients
+
+            # if this is the first occurrence of this region
+            if region not in regions_data:
+                # insert into dictionary
+                regions_data[region] = patients
+            else:
+                regions_data[region] += patients
+
+            # add the trolley and ward numbers to a list of tuples
+            trolley_vs_ward_numbers.append((int(trolley), int(ward)))
+
+    # return the data structures for use with with matplotlib
+    return dates_data, hospitals_data, regions_data, trolley_vs_ward_numbers
+
+
+if __name__ == "__main__":
+
+    # get the data from the file
+    dates_data, hospitals_data, regions_data, trolley_vs_ward_numbers = get_data("trolleywatch2.csv")
+
+
+    pair1 = []
+    pair2 = []
+    for pair in trolley_vs_ward_numbers:
+        pair1.append(pair[0])
+        pair2.append(pair[1])
+
+    fig, axs = plt.subplots(2, 2, figsize=(15, 15))
+
+    ax_piechart = axs[0, 0]
+    ax_barchart = axs[0, 1]
+    ax_dateplot = axs[1, 0]
+    ax_scatter = axs[1, 1]
+
+    # Date_Plot
+
+    ax_dateplot.set_title("Trolleys By Date")
+    ax_dateplot.set_xlabel("Date")
+    ax_dateplot.set_ylabel("Number of Trolleys")
+
+    ax_dateplot.xaxis.set_major_locator(mdates.DayLocator())
+    date_format = mdates.DateFormatter("%A")
+    ax_dateplot.xaxis.set_major_formatter(date_format)
+
+    ax_dateplot.plot_date(dates_data.keys(), dates_data.values())
+
+    # Scatter_plot
+
+    ax_scatter.set_xlabel("Ward")
+    ax_scatter.set_ylabel("Trolleys")
+    ax_scatter.scatter(pair1, pair2, marker=".")
+
+    # Bar_chart
+
+    y_pos = [i for i in range(len(hospitals_data))]
+    ax_barchart.set_yticks(y_pos)
+    ax_barchart.set_yticklabels(hospitals_data.keys())
+    ax_barchart.set_ylabel('Hospital')
+    ax_barchart.set_xlabel('# patients')
+    ax_barchart.barh(y_pos, hospitals_data.values(), align='center')
+
+    # Pie_chart
+
+    ax_piechart.pie(regions_data.values(), labels=regions_data.keys())
+    dates_data, hospitals_data, regions_data, trolley_vs_ward_numbers = get_data("trolleywatch2.csv")
+    ax_piechart.set_title("Region Data Pie Chart ")
+    ax_piechart.pie(regions_data.values(), labels=regions_data.keys())
+
+    fig.savefig("all_graphs")
+
+    plt.show()
